@@ -1,6 +1,10 @@
 const express = require("express");
 const { ApolloServer } = require("apollo-server-express");
 const jwt = require("jsonwebtoken");
+const helmet = require('helmet');
+const cors = require('cors');
+const depthLimit = require('graphql-depth-limit');
+const { createComplexityLimitRule } = require('graphql-validation-complexity');
 
 const typeDefs = require("./schema");
 const resolvers = require("./resolvers");
@@ -14,6 +18,8 @@ const port = process.env.PORT || 4000;
 const DB_HOST = process.env.DB_HOST;
 
 const app = express();
+app.use(helmet());
+app.use(cors());
 
 db.connect(DB_HOST);
 
@@ -33,11 +39,13 @@ const getUser = token => {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => {
+  validationRules: [depthLimit(5), createComplexityLimitRule(1000)],
+  context: async ({ req }) => {
+    // get the user token from the headers
     const token = req.headers.authorization;
-    const user = getUser(token);
-    console.log(user);
-    // Add the db models to the context
+    // try to retrieve a user with the token
+    const user = await getUser(token);
+    // add the db models and the user to the context
     return { models, user };
   }
 });
