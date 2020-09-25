@@ -1,5 +1,7 @@
 const express = require('express');
-const { ApolloServer, gql } = require('apollo-server-express');
+const { ApolloServer } = require('apollo-server-express');
+const jwt = require('jsonwebtoken');
+
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 require('dotenv').config();
@@ -15,13 +17,28 @@ const app = express();
 
 db.connect(DB_HOST);
 
+const getUser = token => {
+    if (token) {
+        try {
+            // return the user information from the token
+            return jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            // if there's a problem with the token, throw an error
+            throw new Error('Session invalid');
+        }
+    }
+};
+
 // Apollo Server setup
 const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: () => {
+    context: ({ req }) => {
+        const token = req.headers.authorization;
+        const user = getUser(token);
+        console.log(user);
         // Add the db models to the context
-        return { models };
+        return { models, user };
     }
 });
 
