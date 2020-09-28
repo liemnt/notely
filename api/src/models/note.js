@@ -1,4 +1,4 @@
-// Require the mongoose library
+// Require the mongose library
 const mongoose = require("mongoose");
 
 // Define the note's database schema
@@ -8,8 +8,9 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    // reference the author's object ID
     author: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true
     },
